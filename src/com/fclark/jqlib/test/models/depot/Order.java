@@ -26,6 +26,11 @@ public class Order extends Entity<Order> {
 		 this.setName("orders");
 	}
 
+        public Iterable<LineItem> getLineItems() {
+            LineItem item = LineItem.alias("l");
+            return item.findWhere(item.orderId.equal(this.id));
+        }
+
 	 public static Order alias(String alias) {
 		 return new Order(alias);
 	}

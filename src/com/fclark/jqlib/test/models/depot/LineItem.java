@@ -26,6 +26,14 @@ public class LineItem extends Entity<LineItem> {
 		 this.setName("line_items");
 	}
 
+        public Product getProduct() {
+            return Product.alias("p").find(this.productId.get());
+        }
+        
+        public Order getOrder() {
+            return Order.alias("o").find(this.orderId.get());
+        }
+
 	 public static LineItem alias(String alias) {
 		 return new LineItem(alias);
 	}

@@ -137,7 +137,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                     if (res.getMetaData().getScale(colPos) > 0)
                         result = res.getDouble(colPos);
                     else
-                        result = res.getInt(colPos);
+                        result = res.getLong(colPos);
                 }                
                 break;
             case Types.CHAR:
@@ -405,6 +405,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         return resp;
     }//getFirst
 
+    @Override
     public boolean found() {
         return found;
     }
