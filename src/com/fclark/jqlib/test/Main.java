@@ -34,10 +34,10 @@ public class Main {
 
     static void initDB() throws Exception {
 
-        Class.forName("oracle.jdbc.driver.OracleDriver");
-        String url = "jdbc:oracle:thin:@//host/instancia";
+        Class.forName("com.mysql.jdbc.Driver");
+        String url = "jdbc:mysql://localhost:3306/depot_development";
 
-        Environment.setConnection(DriverManager.getConnection(url, "usuario", "clave"));
+        Environment.setConnection(DriverManager.getConnection(url, "root", ""));
         Environment.getConnection().setAutoCommit(true);
     }
     

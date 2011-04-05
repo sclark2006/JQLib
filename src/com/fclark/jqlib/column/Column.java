@@ -68,6 +68,7 @@ public class Column extends Expression implements Orderable, Field, Assignable {
         DATA_TYPES_MAP.put(Types.NCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.NVARCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.LONGNVARCHAR, "VARCHAR");
+		DATA_TYPES_MAP.put(Types.LONGVARCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.TIME, "DATE");
         DATA_TYPES_MAP.put(Types.TIMESTAMP, "DATE");
         DATA_TYPES_MAP.put(Types.DATE, "DATE");
