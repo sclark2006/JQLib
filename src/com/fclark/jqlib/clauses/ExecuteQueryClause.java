@@ -405,6 +405,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         return resp;
     }//getFirst
 
+    @Override
     public boolean found() {
         return found;
     }

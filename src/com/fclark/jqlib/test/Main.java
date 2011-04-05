@@ -1,14 +1,14 @@
 package com.fclark.jqlib.test;
 
 import com.fclark.jqlib.Environment;
+import com.fclark.jqlib.test.models.depot.LineItem;
 import com.fclark.jqlib.test.models.depot.Order;
-import com.fclark.jqlib.test.models.depot.Product;
+import static com.fclark.jqlib.Query.selectVar;
+
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-
 import java.util.Arrays;
-
 
 
 public class Main {
@@ -17,34 +17,27 @@ public class Main {
      */
     
     public static void main(String[] args) throws Exception {
-        testMySQL();
         
-        
-
+        test();
     }
-    
-    static void testMySQL() throws Exception {
+     static void test() throws Exception {
         initDB();
-      // Inicialización de Entidades
-     Order  orden = Order.alias("o");
-
-     orden = orden.find(1);
-      if(orden != null)
-        System.out.println("orden = "+ Arrays.toString(orden.values()));
-           
+       
+      Order orden = Order.alias("o").find(1);
+      System.out.println("orden = "+ Arrays.toString(orden.values()));
       
-      for(Product prod: Product.alias("p").findAll())
-          System.out.println("product = " + Arrays.toString(prod.values()));
+      for(LineItem item: orden.getLineItems() )
+          System.out.println("item = " + Arrays.toString(item.values()));
       
       closeConn();
     }
 
     static void initDB() throws Exception {
 
-        Class.forName("com.mysql.jdbc.Driver");
-        String url = "jdbc:mysql://localhost:3306/depot_development";
+        Class.forName("oracle.jdbc.driver.OracleDriver");
+        String url = "jdbc:oracle:thin:@//host/instancia";
 
-        Environment.setConnection(DriverManager.getConnection(url, "root", ""));
+        Environment.setConnection(DriverManager.getConnection(url, "usuario", "clave"));
         Environment.getConnection().setAutoCommit(true);
     }
     

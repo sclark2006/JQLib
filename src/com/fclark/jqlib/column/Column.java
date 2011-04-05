@@ -44,23 +44,20 @@ public class Column extends Expression implements Orderable, Field, Assignable {
     /**
      * {
      *  @code 
-        DATA_TYPES_MAP.put(Types.VARCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.CHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.NCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.NVARCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.LONGNVARCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.LONGVARCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.TIME, "DATE");
-        DATA_TYPES_MAP.put(Types.TIMESTAMP, "DATE");
-        DATA_TYPES_MAP.put(Types.DATE, "DATE");
-        DATA_TYPES_MAP.put(Types.NUMERIC, "NUMBER");
-        DATA_TYPES_MAP.put(Types.DECIMAL, "NUMBER");
-        DATA_TYPES_MAP.put(Types.INTEGER, "NUMBER");
-        DATA_TYPES_MAP.put(Types.REAL, "NUMBER");
-        DATA_TYPES_MAP.put(Types.SMALLINT, "NUMBER");
-        DATA_TYPES_MAP.put(Types.BIT, "NUMBER");
-        DATA_TYPES_MAP.put(Types.FLOAT, "NUMBER");
-        DATA_TYPES_MAP.put(Types.DOUBLE, "VARCHAR");
+     *   DATA_TYPES_MAP.put(Types.VARCHAR, "VARCHAR");
+     *   DATA_TYPES_MAP.put(Types.CHAR, "VARCHAR");
+     *   DATA_TYPES_MAP.put(Types.NCHAR, "VARCHAR");
+     *   DATA_TYPES_MAP.put(Types.NVARCHAR, "VARCHAR");
+     *   DATA_TYPES_MAP.put(Types.TIME, "DATE");
+     *   DATA_TYPES_MAP.put(Types.TIMESTAMP, "DATE");
+     *   DATA_TYPES_MAP.put(Types.DATE, "DATE");
+     *   DATA_TYPES_MAP.put(Types.NUMERIC, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.INTEGER, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.REAL, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.SMALLINT, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.BIT, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.FLOAT, "NUMBER");
+     *   DATA_TYPES_MAP.put(Types.DOUBLE, "VARCHAR");
      *   }       
      */
     public static Hashtable<Integer, String> DATA_TYPES_MAP = new Hashtable<Integer, String>();  
@@ -71,18 +68,19 @@ public class Column extends Expression implements Orderable, Field, Assignable {
         DATA_TYPES_MAP.put(Types.NCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.NVARCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.LONGNVARCHAR, "VARCHAR");
-        DATA_TYPES_MAP.put(Types.LONGVARCHAR, "VARCHAR");
         DATA_TYPES_MAP.put(Types.TIME, "DATE");
         DATA_TYPES_MAP.put(Types.TIMESTAMP, "DATE");
         DATA_TYPES_MAP.put(Types.DATE, "DATE");
         DATA_TYPES_MAP.put(Types.NUMERIC, "NUMBER");
-        DATA_TYPES_MAP.put(Types.DECIMAL, "NUMBER");
         DATA_TYPES_MAP.put(Types.INTEGER, "NUMBER");
+        DATA_TYPES_MAP.put(Types.DECIMAL, "NUMBER");
+        DATA_TYPES_MAP.put(Types.BIGINT, "NUMBER");
         DATA_TYPES_MAP.put(Types.REAL, "NUMBER");
         DATA_TYPES_MAP.put(Types.SMALLINT, "NUMBER");
         DATA_TYPES_MAP.put(Types.BIT, "NUMBER");
         DATA_TYPES_MAP.put(Types.FLOAT, "NUMBER");
-        DATA_TYPES_MAP.put(Types.DOUBLE, "VARCHAR");        
+        DATA_TYPES_MAP.put(Types.DOUBLE, "VARCHAR");
+        
     }
     protected Updatable<?> source;
     protected Object value;
@@ -140,6 +138,7 @@ public class Column extends Expression implements Orderable, Field, Assignable {
     }
 
     
+    @Override
     public String toString() {
         return  source == null || source.getAlias().isEmpty()? this.name : source.getAlias() + "." + this.name;
     }    

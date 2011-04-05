@@ -60,23 +60,21 @@ public class EntityImporterMD {
      */
     public static void main(String[] args) throws Exception {
         
-        Class.forName("com.mysql.jdbc.Driver");
-        String url = "jdbc:mysql://localhost:3306/depot_development"; //args[0] -- connString
-        String user = "root"; //args[1] -- user
-        String pwd = ""; //args[2] --password
-        String schema = "depot_development"; //args[3]; -- schema
-        String table = "*";  //args[5]; -- tableName, use "*" for all tables
-        String pkg = "com.fclark.jqlib.test.models.depot"; //args[6]; -- package where generated classes will belong
+        Class.forName("oracle.jdbc.driver.OracleDriver");
+        String url = "jdbc:oracle:thin:@connstr"; //args[0] -- connString
+        String user = "user"; //args[1] -- user
+        String pwd = "pwd"; //args[2] --password
+        String schema = "schema"; //args[3]; -- schema
+        String table = "tablename";  //args[5]; -- tableName, use "*" for all tables
+        String pkg = "package"; //args[6]; -- package where generated classes will belong        
         String outPath = System.getProperty("user.dir").concat("\\src\\"); //args[7] path where the generated java files will be located    
         boolean includeSynonyms = false;
-        boolean typeAware = true;
         boolean javafy = true;
-        String tableExpr = "s$";
-        String columnExpr = "";
-        boolean asPojo = false;
+        boolean typeAware = true;
+        String removePrefix = "PREFIX_";
         Environment.setConnection(DriverManager.getConnection(url, user,pwd));
         
-        importModel(schema,table,pkg, outPath, typeAware, includeSynonyms, javafy, tableExpr, columnExpr, asPojo);
+        importModel(schema,table,pkg, outPath, typeAware, includeSynonyms, javafy, removePrefix);
         
     }
     
@@ -110,14 +108,13 @@ public class EntityImporterMD {
      *                              clases correspondientes a dichas tablas. De lo contrario solo se importarán las tablas indicadas.   
      * @param javafy                Si es true, las clases serán generadas usando la nomenclatura de Java para las clases y campos. 
      *                              De lo contrario se usarán los nombres reales de las tablas y columnas.  
-     * @param tableExpr          Solo se usa este parámetro si la opción "javafy" es true. Sirve para eliminar algún prefijo que se utilice en la nomenclatura
+     * @param removePrefix          Solo se usa este parámetro si la opción "javafy" es true. Sirve para eliminar algún prefijo que se utilice en la nomenclatura
      *                              de las tablas y sinónimos al momento de generar los nombres de las clases en formato Java.
      * @throws Exception            Cualquier excepción ocurrida durante el proceso de importación es lanzada a la interfaz del usuario o al método que invoque a importModel();
      * 
      */
      public static void importModel(String schema, String table, String pkg, String outPath, 
-             boolean typeAware, boolean includeSynonyms, boolean javafy, String tableExpr,
-             String columnExpr, boolean asPojo) throws Exception {
+             boolean typeAware, boolean includeSynonyms, boolean javafy, String removePrefix) throws Exception {
         StringBuilder classData; 
         ResultSet tablesRes, columnsRes, pkRes;  
         Hashtable<String, Integer> pkTable = new Hashtable<String, Integer>();
@@ -138,8 +135,8 @@ public class EntityImporterMD {
             //javafies the table name
             if(javafy) {
                 //removes the prefixes, if any was specified
-                if(!tableExpr.isEmpty() )
-                    className = className.replaceFirst(tableExpr,"");
+                if(!removePrefix.isEmpty() ) 
+                    className = className.replace(removePrefix,"");
                 
                 className = javafy(className,false);
                 System.out.print("generando clase \""+ className+ "\" de la entidad \""+tableName+"\" ...");
@@ -164,7 +161,6 @@ public class EntityImporterMD {
                 String colName = columnsRes.getString("COLUMN_NAME");
                 int sqlType =  columnsRes.getInt("DATA_TYPE");
                 String colType = "Column";
-                //System.out.println(colName +", "+ sqlType);
                 //Determines the column datatype; default to "Column"
                 if(typeAware && Column.DATA_TYPES_MAP.containsKey(sqlType)) {
                     colType = Column.DATA_TYPES_MAP.get(sqlType); 
@@ -172,9 +168,8 @@ public class EntityImporterMD {
                 
                 classData.append("\tpublic final ").append(colType).append(" ");
                 //javafies the column name
-                if(javafy) {
-                    classData.append(javafy(colName.replaceFirst(columnExpr, ""),true));
-                }
+                if(javafy)
+                    classData.append(javafy(colName,true));
                 else
                     classData.append(colName);
                 
