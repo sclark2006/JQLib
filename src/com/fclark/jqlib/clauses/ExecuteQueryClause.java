@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,12 +26,12 @@ import com.fclark.jqlib.column.Column;
 /**
  * 
  * @author Frederick Clark
- * @version 0.1 Mar 16, 2011. CreaciÛn de la clase ExecuteQueryClause. 
- *                            A esta clase se movio desde la clase ExecuteClause la implementaciÛn de la interfaz Resultable
- *                            para mantener separadas la abstracciÛn de la ejecuciÛn de un consulta de la ejecuciÛn de un
+ * @version 0.1 Mar 16, 2011. Creaci√≥n de la clase ExecuteQueryClause. 
+ *                            A esta clase se movio desde la clase ExecuteClause la implementaci√≥n de la interfaz Resultable
+ *                            para mantener separadas la abstracci√≥n de la ejecuci√≥n de un consulta de la ejecuci√≥n de un
  *                            comando DML (insert, update, delete).
- *                             Est·n pendiente de implementaciÛn los mÈtodos asList().
- *
+ *                             Est√°n pendiente de implementaci√≥n los m√©todos asList().
+ * @version 0.2 Apr 1, 2011.  Correcci√≥n de un bug en el m√©todo getJavaFromSQL() cuando el n√∫mero retornado desde una columna era muy grande.  
  */
 
 public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
@@ -61,16 +62,48 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                 null, value);
     }
 
-    private Object getCastedValue(Class<?> type, ResultSet rs, Object param)
+    /*private Object getCastedValue(Class<?> type, ResultSet rs, Object param)
             throws Exception {
         String methodName = type.getSimpleName();
         methodName = "get" + methodName.substring(0, 1).toUpperCase()
                 + methodName.substring(1);
         return ResultSet.class.getMethod(methodName, int.class).invoke(rs,
                 param);
-    }
+    }*/
+    
+    private void setFromJavaType(Class<?> fieldType, ResultSet res, int colPos, Object value)
+    throws SQLException {
+        try {
+            if (fieldType.equals(String.class))
+                res.updateString(colPos, value.toString());
+            else if (fieldType.equals(boolean.class))
+                res.updateBoolean(colPos,Boolean.class.cast(value).booleanValue());
+            else if (fieldType.equals(double.class))
+                res.updateDouble(colPos,Double.class.cast(value).doubleValue());
+            else if (fieldType.equals(float.class))
+                res.updateFloat(colPos,Float.class.cast(value).floatValue());
+            else if (fieldType.equals(short.class))
+                res.updateShort(colPos,Short.class.cast(value).shortValue());
+            else if (fieldType.equals(java.util.Date.class))
+                res.updateDate(colPos,new java.sql.Date(((java.util.Date) value).getTime()));
+            else if (fieldType.equals(int.class))
+                res.updateInt(colPos, Integer.class.cast(value).intValue());
+            else if (fieldType.equals(long.class))
+                res.updateLong(colPos, Long.class.cast(value).longValue());
+            else if (fieldType.equals(byte.class))
+                res.updateByte(colPos, Byte.class.cast(value).byteValue());
+            else
+                res.updateObject(colPos, value);
+        
+        } catch (IllegalArgumentException ia) {
+            throw new SQLException("setJavaObject: Cannot map a "
+                    + (res.getMetaData().getColumnClassName(colPos) 
+                            + " type to a " + fieldType.getName()));
+        }
+        
+    }   
 
-    private Object getJavaObject(Class<?> fieldType, ResultSet res, int colPos)
+    private Object getFromJavaType(Class<?> fieldType, ResultSet res, int colPos)
             throws SQLException {
         Object result;
         try {
@@ -105,7 +138,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
 
     }
 
-    private Object getJavaFromSQL(Class<?> fieldType, ResultSet res, int colPos)
+    private Object getFromSQLType(Class<?> fieldType, ResultSet res, int colPos)
             throws Exception {
         Object result = null;
         int colType = res.getMetaData().getColumnType(colPos);
@@ -124,20 +157,20 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                 result = res.getFloat(colPos);
                 break;
             case Types.NULL:
-                break;
+                break;                
             case Types.REAL:
             case Types.DOUBLE:
                 result = res.getDouble(colPos);
                 break;
             case Types.NUMERIC:
                 if(fieldType.isPrimitive())
-                    result = getCastedValue(fieldType, res, colPos);
-                // wrapPrimitive(fieldType,res.getString(colPos));
+                    //result = getCastedValue(fieldType, res, colPos); //FC. Apr 08, 2011.
+                    result = getFromJavaType(fieldType, res, colPos); //FC. Apr 08, 2011.
                 else {
                     if (res.getMetaData().getScale(colPos) > 0)
                         result = res.getDouble(colPos);
                     else
-                        result = res.getLong(colPos);
+                        result = res.getLong(colPos); // res.getInt(colPos); Esto daba un error cuando el n√∫mero era muy grande. FC. Apr 1, 2011.
                 }                
                 break;
             case Types.CHAR:
@@ -161,6 +194,8 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                 else
                     result = res.getString(colPos);
                 break;
+            case Types.LONGNVARCHAR:
+            case Types.LONGVARCHAR:
             case Types.NVARCHAR:
             case Types.NCHAR:
             case Types.VARCHAR:
@@ -183,7 +218,6 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
             default:
                 result = res.getObject(colPos);
                 break;
-
             }
         }
 
@@ -195,28 +229,28 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         T record = null;
         ResultSetMetaData md = res.getMetaData();
         if(found) {
-            if (md.getColumnCount() == 1) { // Si se est· consultando sÛlo una columna
+            if (md.getColumnCount() == 1) { // Si se est√° consultando s√≥lo una columna
                 if(type == null)
                     type = (Class<T>) Object.class;   
                 
                 switch(fc) {
                     case OBJECT_PROPERTIES: 
-                        // record = (T)getJavaObject(type,res,1);
-                        record = (T) getCastedValue(type, res, 1);
+                         record = (T)getFromJavaType(type,res,1);     //FC. Apr 08, 2011.
+                        //record = (T) getCastedValue(type, res, 1); // FC. Apr 08, 2011. 
                         break;
                     case RESULTSET_COLUMNS:
-                        record = (T) getJavaFromSQL(type, res, 1);
+                        record = (T) getFromSQLType(type, res, 1);
                         break;
                 }
                 
                 if (res.wasNull())
                     record = null;
                 
-            } else { // Si se est·n consultando m·s de una columna
+            } else { // Si se est√°n consultando m√°s de una columna
                 Class<?> fieldType = Object.class;
                 if(type == null)
                 {
-                    record = (T) getJavaFromSQL(fieldType, res, 1);
+                    record = (T) getFromSQLType(fieldType, res, 1);
                 }
                 else
                 {
@@ -225,7 +259,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                     switch (fc) {
                         case RESULTSET_COLUMNS:
                             for (int i = 0; i < md.getColumnCount(); i++) {
-                                value = getJavaFromSQL(fieldType, res, i + 1);
+                                value = getFromSQLType(fieldType, res, i + 1);
                             }
                             break;
                         case ENTITY_COLUMNS:
@@ -234,11 +268,11 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                             //llena la entidad por orden de los campos
                             if(md.getColumnCount() == cols.length) {
                                 for (int i = 0; i < cols.length; i++) {
-                                    value = getJavaFromSQL(fieldType, res, i + 1);
+                                    value = getFromSQLType(fieldType, res, i + 1);
                                     cols[i].set(value);
                                 }//for
                             }
-                            else //De lo contrario, busca las columnas por nombre. Este mÈtodo es m·s lento que el anterior
+                            else //De lo contrario, busca las columnas por nombre. Este m√©todo es m√°s lento que el anterior
                             {
                                 int foundCols = 0;
                                 for (int i = 0; i < md.getColumnCount(); i++) {
@@ -248,7 +282,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                                         Field field = type.getField(md.getColumnName(i + 1));
                                         column = Column.class.cast(field.get(record));
                                         foundCols++;
-                                        value = getJavaFromSQL(fieldType, res, i + 1);
+                                        value = getFromSQLType(fieldType, res, i + 1);
                                         column.set(value);
                                     }
                                     catch(Exception e) {
@@ -256,9 +290,9 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
                                     }
                                 }//for
                                 
-                                if(foundCols == 0 ) { // Si no se encontrÛ por lo menos una columna
+                                if(foundCols == 0 ) { // Si no se encontr√≥ por lo menos una columna
                                     for (int i = 0; i < cols.length && i < md.getColumnCount(); i++) {
-                                        value = getJavaFromSQL(fieldType, res, i + 1);
+                                        value = getFromSQLType(fieldType, res, i + 1);
                                         cols[i].set(value);
                                     }//for
                                 }//if
@@ -266,11 +300,11 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         
                             break;
                         case OBJECT_PROPERTIES:
-                            //Invoca los setters de la clase seg˙n el orden de los mÈtodos y los campos de la Entidad.
+                            //Invoca los setters de la clase seg√∫n el orden de los m√©todos y los campos de la Entidad.
                             Method[] methods = methodsNamed(type.getMethods(), "set"); //Obtiene todos los setters
                             for (int i = 0; i < md.getColumnCount() && i < methods.length; i++) {
                                 fieldType = methods[i].getParameterTypes()[0];
-                                value = getJavaObject(fieldType, res, i + 1);
+                                value = getFromJavaType(fieldType, res, i + 1);
                                 methods[i].invoke(record, value);                        
                             }
                             break;
@@ -360,7 +394,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         found = res.next();
         if (found) {
             for (int i = 0; i < cols; i++)
-                columns[i] = getJavaFromSQL(columns.getClass()
+                columns[i] = getFromSQLType(columns.getClass()
                         .getComponentType(), res, i + 1);
         }
         if (res != null) {
@@ -405,7 +439,6 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         return resp;
     }//getFirst
 
-    @Override
     public boolean found() {
         return found;
     }
@@ -419,7 +452,7 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         final ResultSet res = asResultSet(params);
         return new Iterable<T>() {
             public Iterator<T> iterator() {
-                return new QueryIterator<T>(res, type);
+                return new ResultIterator<T>(res, type);
             }
 
         }; // iterable
@@ -459,19 +492,90 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         return ls.toArray(result);
     }
 
-    private class QueryIterator<R> implements Iterator<R> {
+    private class ResultList<E> extends AbstractList<E> {
+        private ResultSet resultSet;
+        private Class<E> klass;
+        
+        public ResultList(ResultSet resultSet, Class<E> klass) {
+            this.resultSet = resultSet;
+            this.klass = klass;
+        }
+
+        @Override
+        public E get(int index) {
+            E result;
+            try {
+                if(!resultSet.isClosed() && 
+                    resultSet.getType() == ResultSet.TYPE_SCROLL_INSENSITIVE &&
+                    resultSet.absolute(index+1) ) {
+                        result =  createObjectFromResult(klass, FetchCriteria.ENTITY_COLUMNS, resultSet);
+                }
+                else
+                    result = null;
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                result = null;
+            }                        
+            
+            return result;
+        }
+
+        @Override
+        public int size() {
+            int result;
+            try {
+                if(resultSet.last())
+                    result = resultSet.getRow();
+                else                
+                    result = 0;
+                }
+            catch(Exception e) {
+                e.printStackTrace();
+                result = 0;
+            }            
+            return result;
+        }
+        
+        @Override
+        public void add(int index, E element) {
+            //this.resultSet
+            //this.resultSet.insertRow();
+        }
+        
+        @Override
+        public E set(int index, E element) {
+            return null;            
+        }
+        
+        @Override
+        public E remove(int index) {
+            return null;
+        } 
+
+         
+    }//class ResultList
+    
+    
+    private class ResultIterator<R> implements Iterator<R> {
         private ResultSet rs;
         private Class<R> rType;
-        public QueryIterator(ResultSet res, Class<R> recType) {
+        public ResultIterator(ResultSet res, Class<R> recType) {
             this.rs = res;
             this.rType = recType;
         }
         public boolean hasNext() {
             try {
                 found = rs.next();
-            } catch (SQLException e) {
+                if(!found)
+                    rs.close();
+            } catch (SQLException sqle) {
                 // e.printStackTrace();
                 found = false;
+                try {
+                    rs.close();
+                }
+                catch(Exception e) {}
             }
 
             return found;
@@ -480,10 +584,12 @@ public class ExecuteQueryClause extends ExecuteClause  implements Resultable {
         public R next() {
             R result = null;
             try {
-                result =  createObjectFromResult(rType, FetchCriteria.ENTITY_COLUMNS, rs);
+                if(!rs.isClosed() ) {
+                    result =  createObjectFromResult(rType, FetchCriteria.ENTITY_COLUMNS, rs);
+                }
             }
             catch(Exception e) {
-                //e.printStackTrace();
+                e.printStackTrace();
                 result = null;
             }                        
             
