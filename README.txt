@@ -38,21 +38,24 @@ Here some examples:
         for(PRUEBA p : prueba.findAll()) {
             System.out.println(Arrays.toString(p.values()));
         }
-findAll()
-[EJEMPLO CINCO, 0, 0]
-[EJEMPLO CINCO, 21, 75]
-[EJEMPLO FINAL, 1, 2]
-[EJEMPLO DIEZ, 1, 2]
-[EJEMPLO OCHO, 1, 2]
-[EJEMPLO OCHO, 1, 2]
-[EJEMPLO NUEVE, 25, 35]
-[null, 0, 0]
+//Impresión de resultado
+//findAll()
+//[EJEMPLO CINCO, 0, 0]
+//[EJEMPLO CINCO, 21, 75]
+//[EJEMPLO FINAL, 1, 2]
+//[EJEMPLO DIEZ, 1, 2]
+//[EJEMPLO OCHO, 1, 2]
+//[EJEMPLO OCHO, 1, 2]
+//[EJEMPLO NUEVE, 25, 35]
+//[null, 0, 0]
+
+
 // Todos los datos de una tabla que cumplan con un criterio
 
         System.out.println("\nfind(Predicate)");
         for(PRUEBA p : prueba.find(prueba.EJEMPLO.equal("EJEMPLO OCHO")) ) {
             System.out.println(Arrays.toString(p.values()));
         }
-find(Predicate)
-[EJEMPLO OCHO, 1, 2]
-[EJEMPLO OCHO, 1, 2]
+//find(Predicate)
+//[EJEMPLO OCHO, 1, 2]
+//[EJEMPLO OCHO, 1, 2]
