@@ -1,7 +1,7 @@
 Java Query Library is a set of classes and interfaces that easies the creation and execution of SQL queries and DMLs, and also works as an ORM.
 Project main commiter:
 Frederick Clark /sclark2006
-
+You can folow the TODOList in here: https://github.com/sclark2006/JQLib/wiki/ToDo
 Here some examples:
 //============================================================================
 
