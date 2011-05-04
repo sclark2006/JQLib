@@ -4,7 +4,9 @@ import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
+import com.fclark.jqlib.clauses.DeleteClause;
 import com.fclark.jqlib.clauses.InsertClause;
 import com.fclark.jqlib.clauses.SelectClause;
 import com.fclark.jqlib.clauses.UpdateClause;
@@ -13,19 +15,21 @@ import com.fclark.jqlib.column.Column;
 /**
  * 
  * @author Frederick Clark
- * @version 0.2 Feb 01st 2011 CreaciÛn de Clase
- * @version 0.3 Mar 11, 2011. Se quitÛ la implementaciÛn de Queryable.
- * @version 0.4 Mar 14, 2011. Se agregaron los mÈtodos getName(), aliasedName()
+ * @version 0.2 Feb 01st 2011 Creaci√≥n de Clase
+ * @version 0.3 Mar 11, 2011. Se quit√≥ la implementaci√≥n de Queryable.
+ * @version 0.4 Mar 14, 2011. Se agregaron los m√©todos getName(), aliasedName()
  *          y insertInto().
- * @version 0.5 Mar 15, 2011. Se agregÛ la propiedad schema y el mÈtodo
+ * @version 0.5 Mar 15, 2011. Se agreg√≥ la propiedad schema y el m√©todo
  *          insert();
- * @version 0.6 Mar 18, ImplementaciÛn de interfaz Aliasable<T>
- * @version 0.7 Mar 21, ImplementaciÛn de interfaz Updatable
- * @version 0.8 Mar 29, Se implementÛ el mÈtodo setName(String)
- * @param <T>
+ * @version 0.6 Mar 18, 2011. Implementaci√≥n de interfaz Aliasable<T>
+ * @version 0.7 Mar 21, 2011. Implementaci√≥n de interfaz Updatable
+ * @version 0.8 Mar 29, 2011. Se implement√≥ el m√©todo setName(String)
+ * @version 0.8 Mar 31, 2011. Se implement√≥ el m√©todo delete().
+ * @param <T>                   
  */
 
 public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
+    
     private String alias;
 
     private String name;
@@ -191,6 +195,14 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
         return result;
     }
     
+    public int delete() throws SQLException {
+        int result = new DeleteClause(new DML(this))
+        .where(primaryKey.toPredicate())
+        .execute();
+        changedColumns.clear();
+        return result;
+    }
+    
     public int save() throws SQLException {
         int result = 0;
         if(needsToBeSaved()) {
@@ -208,7 +220,6 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
     }
     
     public T findFirstBy(Column column, Object value) {
-        
         return findFirstWhere(column.equal(value) );
     }
         
@@ -220,8 +231,7 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
         } catch (Exception e) {
             return null;
         }
-    }
-    
+    }    
     
     @SuppressWarnings("unchecked")
     public Iterable<T> findAll() {
@@ -237,8 +247,7 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
     }
     
     @SuppressWarnings("unchecked")
-    public Iterable<T> findWhere(Predicable predicate) {
-        
+    public Iterable<T> findWhere(Predicable predicate) {        
         try {
             return (Iterable<T>) toQuery().where(predicate).asIterable(this.getClass());
         } catch (Exception e) {
@@ -246,13 +255,37 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public int count() {
+        return count(this.getClass());
+    }
+    
     //Class Methods
-    public static <U extends Entity<U>> U alias(Class<U> tableClass,
-            String alias) {
+    public static <U extends Entity<U>>  U findFirstWhere(Class<U> tableClass, Predicable predicate) {
+        try {
+            return toQuery(tableClass).where(predicate).getFirst(tableClass, 
+                    Resultable.FetchCriteria.ENTITY_COLUMNS, (Object[])null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    public static <U extends Entity<U>> Iterable<U> findAll(Class<U> eClass) {        
+        try {
+            return toQuery(eClass).asIterable(eClass);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+            
+    public static <U extends Entity<U>>  U find(Class<U> tableClass, Object... values) {
+        return newInstance(tableClass).find(values);
+    }
+    
+    public static <U extends Entity<U>> U newInstance(Class<U> tableClass) {
         U ret = null;
         try {
             ret = tableClass.newInstance();
-            ret.setAlias(alias);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -260,19 +293,22 @@ public abstract class Entity<T extends Entity<T>> implements Updatable<T> {
         return ret;
     }
     
+    public static <U extends Entity<U>> U alias(Class<U> tableClass,
+            String alias) {
+        return newInstance(tableClass).setAlias(alias);
+    }
+    
     @SuppressWarnings("unchecked")
     public static <T extends Entity<T>> Queryable<T> toQuery(Class<T> eClass) {
-        return (Queryable<T>) new SelectClause(new Query(), null, ALL).from(eClass);
+        return (Queryable<T>) new SelectClause(new Query(), null, ALL).from(eClass.getSimpleName());
     }
    
-    public static <T extends Entity<T>> Iterable<T> findAll(Class<T> eClass) {
-        
+    public static <T extends Entity<T>> int count(Class<T> eClass) {
         try {
-            return toQuery(eClass).asIterable(eClass);
+            return (new SelectClause(new Query(), null, ALL.count()).from(eClass.getSimpleName())).getSingleValue();
         } catch (Exception e) {
-            return null;
-        }
+           return 0;
+        } 
     }
-        
     
 }// class
